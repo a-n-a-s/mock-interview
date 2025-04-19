@@ -1,10 +1,15 @@
 import Agentai from '@/components/Agentai'
+import { getCurentUser } from '@/lib/actions/auth.actions'
 import React from 'react'
 
-const page = () => {
+const page =  async () => {
+
+  const user = await getCurentUser();
+
   return (
     <>
-        <Agentai  userName="you" userId="user1"  type="generate" />
+    <h3>Interview Generation</h3>
+        <Agentai  userName={user?.name} userId={user?.id}  type="generate" />
     </>
   )
 }
