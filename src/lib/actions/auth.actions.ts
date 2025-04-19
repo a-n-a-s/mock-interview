@@ -133,37 +133,3 @@ export async function isAuthenticated() {
     return false;
   }
 }
-
-export async function getInterviewsByUserId(
-  userId: string
-): Promise<Interview[] | null> {
-  const interviews = await db
-    .collection("interviews")
-    .where("userId", "==", userId)
-    .get();
-  const interviewData = interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-  return interviewData as Interview[];
-}
-
-export async function getLatestInterviews(
-  params: GetLatestInterviewsParams
-): Promise<Interview[] | null> {
-  const { userId, limit = 20 } = params;
-  const interviews = await db
-    .collection("interviews")
-    .orderBy("createdAt", "desc")
-    .where("userId", "!=", userId)
-    .where("finalized", "==", true)
-    .limit(limit)
-    .get();
-
-  const interviewData = interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-
-  return interviewData as Interview[];
-}
