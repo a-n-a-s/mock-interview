@@ -7,6 +7,7 @@ import { useState } from "react";
 import { vapi } from "@/lib/vapi.sdk";
 import { interviewer } from "../../constants";
 import { createFeedback } from "@/lib/actions/general.actions";
+import { toast } from "sonner";
 
 enum CallStatus {
   ACTIVE = "ACTIVE",
@@ -114,6 +115,12 @@ const Agentai = ({
     if (type === "generate") {
       const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
       console.log("Starting Vapi with Workflow ID:", workflowId);
+
+      if (!workflowId) {
+        toast.error("Workflow ID is missing. Check NEXT_PUBLIC_VAPI_WORKFLOW_ID in .env.local");
+        setCallStatus(CallStatus.INACTIVE);
+        return;
+      }
       
       try {
         await vapi.start(workflowId!, {
@@ -124,6 +131,8 @@ const Agentai = ({
         });
       } catch (err) {
         console.error("Error starting Vapi workflow:", err);
+        toast.error("Failed to start speech generation");
+        setCallStatus(CallStatus.INACTIVE);
       }
     } else {
       let formattedQuestions = "";
@@ -145,6 +154,8 @@ const Agentai = ({
         });
       } catch (err) {
          console.error("Error starting Vapi assistant:", err);
+         toast.error("Failed to start interview");
+         setCallStatus(CallStatus.INACTIVE);
       }
     }
   };
