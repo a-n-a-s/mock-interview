@@ -112,12 +112,19 @@ const Agentai = ({
     setCallStatus(CallStatus.CONNECTING);
 
     if (type === "generate") {
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-        variableValues: {
-          userid: userId,
-          username: userName,
-        },
-      });
+      const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
+      console.log("Starting Vapi with Workflow ID:", workflowId);
+      
+      try {
+        await vapi.start(workflowId!, {
+          variableValues: {
+            userid: userId,
+            username: userName,
+          },
+        });
+      } catch (err) {
+        console.error("Error starting Vapi workflow:", err);
+      }
     } else {
       let formattedQuestions = "";
 
@@ -127,11 +134,18 @@ const Agentai = ({
           .join("\n");
       }
 
-      await vapi.start(interviewer, {
-        variableValues: {
-          questions: formattedQuestions,
-        },
-      });
+      console.log("Starting Vapi with Assistant:", interviewer);
+      console.log("Questions:", formattedQuestions);
+
+      try {
+        await vapi.start(interviewer, {
+          variableValues: {
+            questions: formattedQuestions,
+          },
+        });
+      } catch (err) {
+         console.error("Error starting Vapi assistant:", err);
+      }
     }
   };
 

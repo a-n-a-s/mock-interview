@@ -1,3 +1,4 @@
+"use server";
 import { google } from "@ai-sdk/google";
 import { db, auth } from "../../../firebase/admin";
 import { generateObject } from "ai";
@@ -5,14 +6,27 @@ import { feedbackSchema } from "../../../constants";
 export async function getInterviewsByUserId(
   userId: string
 ): Promise<Interview[] | null> {
+  console.log("getInterviewsByUserId called with userId:", userId); // Debug log
+
+  if (!userId) {
+    console.warn("getInterviewsByUserId called with undefined or null userId");
+    return [];
+  }
+
   const interviews = await db
     .collection("interviews")
     .where("userId", "==", userId)
     .get();
+
+  console.log("Interviews query result:", interviews.size, "documents found"); // Debug log
+
   const interviewData = interviews.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   }));
+
+  console.log("Interview data returned:", interviewData.length, "interviews"); // Debug log
+
   return interviewData as Interview[];
 }
 
@@ -20,6 +34,13 @@ export async function getLatestInterviews(
   params: GetLatestInterviewsParams
 ): Promise<Interview[] | null> {
   const { userId, limit = 20 } = params;
+  console.log("getLatestInterviews called with userId:", userId, "and limit:", limit); // Debug log
+
+  if (!userId) {
+    console.warn("getLatestInterviews called with undefined or null userId");
+    return [];
+  }
+
   const interviews = await db
     .collection("interviews")
     .orderBy("createdAt", "desc")
@@ -27,6 +48,8 @@ export async function getLatestInterviews(
     .where("finalized", "==", true)
     .limit(limit)
     .get();
+
+  console.log("Latest interviews query result:", interviews.size, "documents found"); // Debug log
 
   const interviewData = interviews.docs.map((doc) => ({
     id: doc.id,
@@ -50,6 +73,9 @@ export async function createFeedback(params: CreateFeedbackParams) {
         return `${role}: ${content}`;
       })
       .join("\n");
+
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    console.log("Gemini API Key configured (Server Action):", !!apiKey);
 
     const { object } = await generateObject({
       model: google("gemini-2.0-flash-001", {

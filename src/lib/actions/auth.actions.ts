@@ -47,25 +47,32 @@ export async function signUp(params: SignUpParams) {
 export async function signIn(params: SignInParams) {
   const { email, idToken } = params;
   try {
-    const userRecord = await auth.getUserByEmail(email);
+    // Verify the ID token to get user information
+    const decodedToken = await auth.verifyIdToken(idToken);
 
-    if (!userRecord) {
+    // Check if user exists in our database using the UID from the token
+    const userDoc = await db.collection("users").doc(decodedToken.uid).get();
+
+    if (!userDoc.exists) {
       return {
         success: false,
-        message: "User not found.Create an account",
+        message: "User not found. Create an account",
       };
     }
+
     await setSessionCookie(idToken);
     return {
       success: true,
       message: "Signed in successfully",
     };
   } catch (e: any) {
-    console.error("Error in creating a user", e);
+    console.error("Error in signing in user", e);
 
     return {
       success: false,
-      message: "Failed to create account",
+      message: e.code?.includes('auth/id-token-expired') || e.code?.includes('auth/invalid-id-token')
+        ? "Session expired. Please sign in again."
+        : "Failed to sign in",
     };
   }
 }
@@ -102,20 +109,24 @@ export async function getCurentUser(): Promise<User | null> {
       return null;
     }
 
+    console.log("Decoded claims UID:", decodedClaims.uid); // Debug log
+
     const userRecord = await db
       .collection("users")
-      .doc(decodedClaims.user_id)
+      .doc(decodedClaims.uid) // Changed from user_id to uid
       .get();
 
     if (!userRecord.exists) {
+      console.log("User record does not exist for UID:", decodedClaims.uid);
       return null;
     }
 
     const userData = userRecord.data();
+    console.log("User data retrieved:", userData); // Debug log
 
     return {
       ...userData,
-      id: userRecord.id,
+      id: decodedClaims.uid, // Use the UID from decoded claims as the ID
     } as User;
   } catch (e) {
     console.error("Error in getCurrentUser:", e);
